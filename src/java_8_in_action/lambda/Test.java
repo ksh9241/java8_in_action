@@ -32,4 +32,21 @@ public class Test implements Predicate, AppleFormatter{
 		return "A " + characteristic + " " + apple.getColor() + " apple";
 	}
 	
+	public static void main(String [] args) {
+		Runnable r1 = () -> System.out.println("Hello Wolrd");
+		
+		process(r1);
+		
+		int portNumber = 3306;
+		Runnable r = () -> {
+			System.out.println(portNumber);
+		};
+		//portNumber = 13306; // 재정의 시 에러발생
+		process(r);
+	}
+	
+	public static void process (Runnable r) {
+		r.run();
+	}
+	
 }
