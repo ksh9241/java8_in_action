@@ -140,10 +140,16 @@ public class Test implements Predicate, AppleFormatter{
 @FunctionalInterface 어노테이션은 함수형 인터페이스임을 가리키는 어노테이션이다. 어노테이션을 선언했지만 실제 함수형 인터페이스가 아니면 컴파일러가 에러를 발생시킨다.
 
 ##### 함수형 인터페이스 사용
-- Predicate : test(T t) 의 추상메서드를 재정의하며 boolean타입으로 반환한다.
+- Predicate : test(T t) 의 추상메서드를 재정의하며 boolean타입으로 반환한다. Predicate에는 negate, and, or 세 가지 메서드를 제공한다. 
+	- neaget : 특정조건이 아닌 것을 반전시킬 때 사용한다.
+	- and : 두 람다를 조합할 수 있다. (조건문 ex : a -> a.getWeight() > 150)
+	- or : 추가적인 다양한 조건을 만들 수 있다. ( ex : a -> a.getWeight() > 150).or( a -> a.getColor().equals("green"))
 - Consumer : 파라미터를 받아서 어떤 동작을 수행하고 싶을 때 사용한다. 반환타입은 void로 반환하지않으며, 예를들어 int값을 받아서 반복문을 통한 동작수행이라던가 그런 동작을 할 떄 사용한다.
 - Function : 제네릭 형식의 T를 인수로 받아서 제네릭 형식의 R을 반환하는 apply라는 추상 메서드를 정의한다. 입력을 출력으로 매핑하는 람다를 정의할 때 Function 인터페이스를 활용한다.
-
+	- andThen과 compose의 차이 : 인터페이스A.andThen(인터페이스B); 가 존재할 때 andThen은 대상 값(A)부터 처리 후 B를 처리하여 반환하지만 compose의 경우 매개변수 값(B)를 먼저 처리하고 A를 통한 뒤 반환하게 된다.
+	- andThen : 주어진 함수를 먼저 적용한 결과를 다른 함수의 입력으로 전달하는 함수를 반환한다. (ex : f = x -> x +1, g = x -> x *2 가 있을 때 f와 g를 조립해서 숫자를 증가시킨 뒤 결과에 2를 곱하는 h라는 함수를 만들 수 있다.)
+	- compose : 인수로 주어진 함수를 먼저 실행한 다음에 그 결과를 외부 함수의 인수로 제공한다. 즉, f.andThen (g) 에서 andThen 대신에 compose를 사용하면 g(f(x))가 아니라 f(g(x)) 라는 수식이 된다.
+- Supplier : 매개변수를 받지 않고 단순히 무엇인가를 반환하는 추상메서드
 ##### 기본형 특화
 참조형 : Byte, Integer, Object, List
 기본형 : int, char, byte, double
@@ -194,3 +200,44 @@ int portNumber = 3306;
 
 ##### 지역변수 제약
 인스턴스 변수는 힙에 저장되는 반면 지역변수는 스택에 위치한다. 람다에서 지역변수에 바로 접근할 수 있다는 가정하에 람다가 스레드에서 실행된다면 변수를 할당한 스레드가 사라져서 변수 할당이 해제되었는데도 람다를 실행하는 스레드에서는 해당 변수에 접근하려 할 수 있다. 따라서 자바 구현에서는 원래 변수에 접근을 허용하는 것이 아니라 자유 지역변수의 복사본을 제공한다. 따라서 복사본의 값이 바뀌지 않아야 하므로 제약이 생긴 것이다.
+
+##### 메서드 레퍼런스
+메서드 레퍼런스란 기존의 메서드를 재정의하여 람다처럼 사용할 수 있다. 메서드 레퍼런스는 메서드명 앞에 구분자 (::)를 붙이는 방식으로 메서드 레퍼런스를 활용할 수 있다. 예를 들어 Apple::getWeight는 람다표현식 (Apple a) -> a.getWeight()를 축약한 것이다. 메서드 레퍼런스는 메서드를 직접 호출하는 것이 아니므로 괄호가 필요없다.
+
+```JAVA
+// 람다						메서드 레퍼런스
+(Apple a) -> a.getWeight();			Apple::getWeight
+() -> Thread.currentThread().dumpStack()	Thread.currentThread()::dumpStack
+(str, i) -> str.substring(i)			String::substring
+(String s) -> System.out.println(s)		System.out::println
+```
+
+##### 메서드 레퍼런스 만드는 방법
+메서드 레퍼런스는 세 가지 유형으로 구분할 수 있다.
+1. 정적 메서드 레퍼런스
+- 예를 들어 Integer 의 parseInt 메서드는 Integer::parseInte로 표현할 수 있다.
+
+2. 다양한 형식의 인스턴스 메서드 레퍼런스
+- 예를 들어 String의 length 메서드는 String::length로 표현할 수 있다.
+ex ) (String s) -> s.toUpperCase()	==	String::toUpperCase
+
+3. 기존 객체의 인스턴스 메서드 레퍼런스
+- 예를 들어 Transaction 객체를 할당받은 expensiveTransaction 지역 변수가 있고, Transaction 객체에는 getValue 메서드가 있다면, 이를 expensiveTransaction::getValue 라고 표현할 수 있다.
+ex ) Transaction expensiveTransaction = new Transaction();
+expensiveTransaction.getValue();		==	expensiveTransaction::getValue
+
+##### 생성자 레퍼런스
+ClassName::new 를 이용하여 클래스의 기본생성자의 레퍼런스를 만들 수 있다.
+ex) Supplier<Apple> c1 = new Apple<>();	==	Supplier<Apple> c1 = Apple::new;
+
+문제 : Color(int, int, int) 처럼 인수가 세 개인 생성자의 생성자 레퍼런스를 사용하려면 어떻게 해야 할까??
+답 : 생성자 레퍼런스 문법은 ClassName::new이므로 Color 생성자의 레퍼런스는 Color::new가 된다. 하지만 이를 사용하려면 생성자 레퍼런스와 일치하는 시그니처를 갖는 함수형 인터페이스가 필요하다. 현재 이런 시그니처를 갖는 함수형 인터페이스는 제공되지 않으므로 우리가 직접 만들어야 한다.
+public interface TriFunction<T, U, V, R> {
+	R apple(T t, U u, V v);
+}
+TriFunction<Integer, Integer, Integer, Color> colorFactory = Color::new;
+
+##### Comparator
+- comparing : Function함수를 재정의하여 메서드 레퍼런스를 사용할 수 있다.
+- reversed() : 정렬 값을 내림차순으로 할 때 사용한다.
+- thenComparing : 첫번째 정렬 값이 동일 할 때 두번 째 정렬 값을 지정한다.
