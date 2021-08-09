@@ -241,3 +241,37 @@ TriFunction<Integer, Integer, Integer, Color> colorFactory = Color::new;
 - comparing : Function함수를 재정의하여 메서드 레퍼런스를 사용할 수 있다.
 - reversed() : 정렬 값을 내림차순으로 할 때 사용한다.
 - thenComparing : 첫번째 정렬 값이 동일 할 때 두번 째 정렬 값을 지정한다.
+
+##### 스트림이란?
+스트림이란 자바 API에 새로 추가된 기능으로, 스트림을 이용하면 선언형(즉, 데이터를 처리하는 임시 구현 코드 대신 질의로 표현할 수 있다.)으로 컬렉션 데이터를 처리할 수 있다. 또한 스트림을 이용하면 멀티 스레드 코드를 구현하지 않아도 데이터를 투명하게 병렬로 처리할 수 있다.
+
+##### 스트림과 컬렉션의 차이
+먼저 컬렉션은 DVD와 같다. 영화가 있다고 치면 영화를 처음부터 끝까지 다운받은 상태가 컬렉션이다. 즉 데이터를 전부 가지고 있는 상태에서 그것을 요청에 맞게 처리한다. 반면 스트림은 스트리밍과 비슷하다. 영화로 치면 네트워크에서 영화를 전체 다운받아서 실행시키는 것이 아니라 앞의 5분 앞의 3분 등 필요한 순간순간에 데이터를 조금씩 받아서 실행한다. 즉 요청이 들어와야 데이터 처리를 시작한다. 이렇게 보면 컬렉션이 좋아보일 수 있지만 스트림의 장점은 필요한 데이터만 바로바로 가져오기 때문에 데이터를 완성시키고 처리하는 컬렉션보다 훨씬 빠르다. 다만 단점은 스트림은 1회용이라고 생각하면 편하다. 스트림으로 정의하고 두번 호출하게 되면 IllegalStateException이 발생한다.
+
+##### 외부 반복과 내부 반복
+외부반복이란 사용자가 직접 반복해야 되는 것을 말한다 (for-each 등을 사용하여). 반면 스트림 라이브러리는 내장함수에서 반복을 알아서 처리하고 저장해주는 내부 반복을 사용한다.
+
+```JAVA
+// 외부 반복
+		List<String> names = new ArrayList<>();
+		for(Dish d : menu) {
+			names.add(d.getName());
+		}
+		
+		// 내부적으로 숨겨졌던 반복자 (iterator)를 통한 외부반복
+		List<String> names2 = new ArrayList<>();
+		Iterator<Dish> iterator = menu.iterator();
+		while (iterator.hasNext()) {
+			Dish d = iterator.next();
+			names2.add(d.getName());
+		}
+		
+		// 내부반복
+		List<String> names3 = menu.stream().map(Dish::getName).collect(Collectors.toList());
+```
+
+##### 중간연산
+filter 나 sorted 같은 중간 연산은 다른 스트림을 반환한다. 따라서 여러 중간연산을 연결해서 질의를 만들 수 있다.
+
+##### 최종연산
+최종연산은 스트림 파이프라인에서(중간연산들) 결과를 도출한다 보통 최종연산에 의해 List, Integer, void 등 스트림 이외의 결과가 반환된다.
