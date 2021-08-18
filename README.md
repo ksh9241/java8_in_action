@@ -317,3 +317,35 @@ Optional<T> 클래스는 값의 존재나 부재 여부를 표현하는 컨테�
 - iterate : 내부 로직에서 처리되는 로직의 값이 새로 생성되고 기존에 있던 값은 쓰지 않는 불변 상태를 유지한다.
 - generate : 내부 로직에서 쓰던 객체의 값을 변경하여 사용하는 가변 상태의 객체이다.
 스트림을 병렬 처리하면서 올바른 결과를 얻으려면 불변 상태 기법을 고수해야한다.
+
+##### 요약연산
+Collectors 클래스는 Collectors.summingInt 라는 특별한 요약 팩토리 메서드를 제공한다. summingInt는 객체를 int로 매핑하는 함수를 인수로 받는다. summingInt의 인수로 전달된 함수는 객체를 int로 매핑한 컬렉터를 반환한다.
+- 값을 합산하는 API
+	- summingInt
+	- summingLong
+	- summingDouble
+
+- 값의 평균을 연산하는 API
+	- averagingInt
+	- averaginLong
+	- averagingDouble
+
+- 합계, 평균, 최대값, 카운트 중 2개 이상을 사용할 때
+	- IntSummaryStatistics
+	- LongSummaryStatistics
+	- DoubleSummaryStatistics
+
+##### 범용 리듀싱
+
+```JAVA
+int totalCalories2 = menu.stream().collect(Collectors.reducing(0, Dish::getCalories, (i, j) -> i + j));
+		System.out.println(totalCalories2);
+```
+- 첫 번째 인수는 리듀싱 연산의 시작값이거나 스트림에 인수가 없을 때는 반환값이다.
+- 두 번째 인수는 객체를 인수로 변환할 때 사용한 변환 함수이다.
+- 세 번째 인수는 같은 종류의 두 항목을 하나의 값으로 더하는 BinaryOperator이다.
+
+##### Collect와 reduce의 차이
+Collect는 가변형 연산
+reduce는 불변형 연산
+reduce는 불변형 연산이기 때문에 값이 변할 때마다 새로운 객체에 값을 할당해줘야 한다. 이는 성능저하와 동시에 병렬로 수행할 수 없는 단점도 가지고 있다.
