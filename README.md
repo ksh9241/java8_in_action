@@ -345,7 +345,12 @@ int totalCalories2 = menu.stream().collect(Collectors.reducing(0, Dish::getCalor
 - 두 번째 인수는 객체를 인수로 변환할 때 사용한 변환 함수이다.
 - 세 번째 인수는 같은 종류의 두 항목을 하나의 값으로 더하는 BinaryOperator이다.
 
-##### Collect와 reduce의 차이
-Collect는 가변형 연산
+##### Collect(reducing) 와 reduce의 차이
+Collect(reducing) 는 가변형 연산
 reduce는 불변형 연산
 reduce는 불변형 연산이기 때문에 값이 변할 때마다 새로운 객체에 값을 할당해줘야 한다. 이는 성능저하와 동시에 병렬로 수행할 수 없는 단점도 가지고 있다.
+
+##### 그룹화
+데이터 집합을 하나 이상의 특성으로 분류해서 그롭화하는 연산도 데이터베이스에서많이 수행 되는 작업이다. 자바 8 에서는 함수형을 이용하여 한줄로 그룹화를 구현할 수 있다.
+
+- groupingBy : Collectors의 메서드로 매개변수의 값을 통해 그룹으로 나누어 리스트로 반환한다.
