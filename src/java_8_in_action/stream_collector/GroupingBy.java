@@ -139,8 +139,13 @@ public class GroupingBy {
 		
 		System.out.println(mostCaloricPartitionedByVegetarian);
 		
+		System.out.println("------------------");
 		Map<Boolean, List<Integer>> list = partitionPrimes(100);
 		System.out.println(list);
+		
+		Map<Boolean, List<Integer>> customList = partitionPrimesWithCustomCollector(100);
+		System.out.println(customList);
+		
 	}
 	public enum CaloricLevel {DIET, NORMAL, FAT}
 	
@@ -156,8 +161,15 @@ public class GroupingBy {
 //							.noneMatch(i -> candidate % i == 0);
 	}
 	
+	// 기존 컬렉터로 사용한 메서드
 	public static Map<Boolean, List<Integer>> partitionPrimes (int n) {
 		return IntStream.rangeClosed(2, n).boxed()
 							.collect(partitioningBy(candidate -> isPrime(candidate)));
+	}
+	
+	// 커스텀 컬렉터 (PrimeNumbersCollector)를 사용하는 메서드
+	public static Map<Boolean, List<Integer>> partitionPrimesWithCustomCollector(int n) {
+		return IntStream.rangeClosed(2, n).boxed()
+						.collect(new PrimeNumbersCollector());
 	}
 }

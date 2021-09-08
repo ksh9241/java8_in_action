@@ -361,3 +361,65 @@ reduce는 불변형 연산이기 때문에 값이 변할 때마다 새로운 객
 
 ##### 분할의 장점
 분할함수의 장점은 조건의 해당하는 것, 해당하지 않는 것을 모두 정리하여 반환하는 것이 장점이다.
+
+##### Collector 인터페이스
+- Supplier<A> supplier()
+
+	- Supplier 메서드는 빈 결과로 이루어진 Supplier를 반환한다. 즉 supplier는 수집 과정에서 빈 누적자 인스턴스를 만드는 파라미터가 없는 함수이다. ToListCollector처럼 누적자를 반환하는 컬렉터에서는 빈 누적자가 비어있는 스트림의 수집 과정의 결과가 될 수 있다. (수집 과정이란 스트림이 실행되는 중간연산 단계를 말한다. 즉 위 내용은 중간연산에서 어떠한 값도 담지 않으면 supplier의 누적자가 반환되어 최종 결과값이 될 수 있다는 말이다.)
+
+```JAVA
+public Supplier <List<T>> supplier() {
+	return () -> new ArrayList<T>();
+}
+
+// 생성자 레퍼런스를 전달하는 방법
+public Supplier <List<T>> supplier() {
+	return ArrayList::new;
+}
+```
+
+- BiConsumer<A, T> accumulator()
+
+	- accumulator 메서드는 리듀싱 연산을 수행하는 함수를 반환한다. 누적자(A) 와 n번째 요소를 함수에 적용한다. 함수의 반환값은 void 이며 매개변수로 들어온 누적자 (A)에 값을 처리한다.
+
+```JAVA
+public BiConsumer<List<T>, T> accumulator() {
+	return (list, item) -> list.add(item);
+}
+
+// 메서드 레퍼런스 사용
+public BiConsumer<List<T>, T> accumulator() {
+	return List::add;
+}
+```
+
+- Function<A, R> finisher()
+
+	- finisher 메서드는 스트림 탐색을 끝내고 누적자 객체를 최종 결과로 변환하면서 누적 과정을 끝낼 때 호출할 함수를 반환해야 한다. 누적자 (A) 객체가 이미 최종 결과인 상황도 있는데 이럴 때는 변환 과정이 필요하지 않으므로 finisher 메서드는 항등 함수를 반환한다.
+
+```JAVA
+public Function<List<T>, List<T>> finisher() {
+	return Function.identity();
+}
+```
+
+- BinaryOperator<List<T>> combiner()
+
+	- 리듀싱 연산에서 사용할 함수를 반환하는 combiner을 살펴보자. combiner은 스트림의 서로 다른 서브파트를 병렬로 처리할 때 누적자가 이 결과를 어떻게 처리할지 정의한다. toList의 combiner은 비교적 쉽게 구현할 수 있다. 즉 스트림의 두 번째 서브파트에서 수집한 항목 리스트를 첫 번째 서브파트 결과 리스트 뒤에 추가한다.
+
+```JAVA
+public BinaryOperator<List<T>> combiner() {
+	return (list1, list2) -> {
+		list1.addAll(list2);
+		return list1;
+	}
+}
+```
+
+- Set<Characteristics> characteristics()
+
+	- characteristics 메서드는 컬렉터의 연산을 정의하는 Characteristics 형식의 불변 집합을 반환한다. Characteristics는 다음 세 항목을 포함하는 열거형이다.
+		
+		- UNORDERED : 리듀싱 결과는 스트림 요소의 방문 순서나 누적 순서에 영향을 받지 않는다.
+		- CONCURRENT : 다중스레드에서 accumulator 함수를 동시에 호출할 수 있고, 병렬 리듀싱을 수행할 수 있다. 하지만 UNORDERED를 함께 설정하지 않으면 정렬되어 있지 않은 상황에서만 병렬 리듀싱을 수행할 수 있다.
+		- IDENTITY_FINISH : 리듀싱 과정의 최종 결과로 누적자 객체를 바로 사용할 수 있다. 또한 누적자 A를 결과 R로 안전하게 형변환 할 수 있다.
