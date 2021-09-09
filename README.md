@@ -423,3 +423,31 @@ public BinaryOperator<List<T>> combiner() {
 		- UNORDERED : 리듀싱 결과는 스트림 요소의 방문 순서나 누적 순서에 영향을 받지 않는다.
 		- CONCURRENT : 다중스레드에서 accumulator 함수를 동시에 호출할 수 있고, 병렬 리듀싱을 수행할 수 있다. 하지만 UNORDERED를 함께 설정하지 않으면 정렬되어 있지 않은 상황에서만 병렬 리듀싱을 수행할 수 있다.
 		- IDENTITY_FINISH : 리듀싱 과정의 최종 결과로 누적자 객체를 바로 사용할 수 있다. 또한 누적자 A를 결과 R로 안전하게 형변환 할 수 있다.
+
+##### 병렬스트림
+컬렉션에 ParallelStream을 호출하면 병렬 스트림이 생성된다.
+병렬 처리에서 중요한 부분은 iterate를 사용하지 말고 LongStream.rangeClosed를 사용해야 한다.
+병렬 처리는 올바른 자료구조를 선택하여 코드를 작성해야 순차 (자바 반복문)실행 보다 빠른 속도로 처리된다.
+병렬처리는 멀티코어 간의 데이터 이동도 많고 재귀, 서브스트림 리듀싱 등 비용이 비싸다.
+적절한 상황에서 사용하는 것이 바람직하다.
+
+##### LongStream.rangeClosed 장점
+- LongStream.rangeClosed는 기본형 long을 직접 사용하므로 박싱과 언박싱 오버헤드가 사라진다. (박싱 언박싱 작업이 필요없다는 말)
+- LongStream.rangeClosed는 쉽게 청크로 분할할 수 있는 숫자 범위를 생성한다. 예를 들어 1 - 20 범위의 숫자를 각각 1 - 5, 6 - 10, 11- 15, 16 - 20 범위의 숫자로 분할할 수 있다.
+
+##### 병렬 스트림 주의 사항
+
+```JAVA
+public static long sideEffectSum (long n) {
+	Accumulator accumulator = new Accumulator();
+	LongStream.rangeClosed (1, n).forEach (accumulator::add);
+	return accumulator.total;
+}
+
+public class Accumulator {
+	public long total = 0;
+	public void add (long value) { total += value; }
+}
+```
+
+위의 코드를 그대로 사용 할 경우 데이터 레이스의 문제가 일어난다. total의 값이 불변객체여야 하는데 값이 자꾸 바뀌어 버리는 형태로 병렬처리가 진행되면 데이터 값이 정확하지 않는다.
