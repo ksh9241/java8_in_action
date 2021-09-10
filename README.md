@@ -466,3 +466,32 @@ if (태스크가 충분히 작거나 더 이상 분할할 수 없으면) {
 분할 후 정복 (divide-and-conquer) 알고리즘 병렬화 버전이다.
 
 일반적으로 애플리케이션에서는 둘 이상의 ForkJoinPool을 사용하지 않는다. 즉 소프트웨어의 필요한 곳에서 언제든 가져다 쓸 수 있도록 ForkJoinPool을 한번만 인스턴스화해서 정적필드에 싱글턴으로 저장한다.
+
+##### 포크/조인 프레임워크를 제대로 사용하는 방법
+- join 메서드는 두 서브태스크가 모두 시작된 다음에 사용해야 한다. join 메서드를 먼저 호출하면 태스크가 생산하는 결과가 준비될 때까지 호출자를 블록시킨다.
+- RecursiveTask 내에서는 ForkJoinPool의 invoke 메서드를 사용하지 말고 compute 나 fork메서드를 사용해라. 순차 코드에서 병렬 계산을 시작할 때만 invoke를 사용한다.
+- 서브태스크를 나눌 때 좌, 우 모두 fork 메서드를 호출하는 것보다 fork와 compute를 호출하는 것이 효율적이다. 두 서브태스크가 한 태스크에는 같은 스레드를 재사용할 수 있으므로 불필요한 태스크를 할당하는 오버헤드를 피할 수 있다.
+
+##### 작업 훔치기
+ForkJoinPool의 모든 스레드를 거의 공정하게 분할한다. 각각의 스레드는 자신에게 할당된 태스크를 포함하는 이중연결 리스트를 참조하면서 작업이 끝날 때 마다 큐의 헤드에서 다른 태스크를 가져와서 작업을 처리한다. 방법은 작업이 끝난 스레드가 작업중인 스레드 큐의 끝 (꼬리) 에서 작업을 훔쳐온다.
+
+##### Spliterator
+Spliterator은 분할할 수 있는 반복자 라는 의미이다. Iterator처럼 Spliterator는 소스의 요소 탐색 기능을 제공한다는 점은 같지만 Spliterator는 병렬 작업에 특화되어 있다.
+
+```JAVA
+// Spliterator Interface
+public interface Spliterator<T> {
+	boolean tryAdvance (Consumer<? super T> action);
+	Spliterator<T> trySplit();
+	long estimateSize();
+	int characteristics();
+}
+
+/*
+여기서 T는 Spliterator에서 탐색하는 요소의 형식 (타입)을 가리킨다.
+- tryAdvance : Spliterator의 요소를 하나씩 순차적으로 소비하면서 탐색해야 할 요소가 남아있으면 참, 없으면 거짓을 반환한다. (일반적인 Iterator 동작과 같다.)
+- trySplit : Spliterator의 일부 요소(자신이 반환한 요소)를 분할해서 두 번째 Spliterator를 생성하는 메서드이다.
+- estimateSize : 탐색해야 할 요소 수 정보를 제공할 수 있다.
+- characteristics : Spliterator 자체의 특성 집합을 포함하는 int를 반환한다.
+*/
+```

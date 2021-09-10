@@ -1,5 +1,9 @@
 package java_8_in_action.stream_collector;
 
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.stream.LongStream;
+
 public class ForkJoinSumCalculator extends java.util.concurrent.RecursiveTask<Long> {
 
 	private final long[] numbers;
@@ -55,6 +59,13 @@ public class ForkJoinSumCalculator extends java.util.concurrent.RecursiveTask<Lo
 			sum += numbers[i];
 		}
 		return sum;
+	}
+	
+	//
+	public static long forkJoinSum (long n) {
+		long[] numbers = LongStream.rangeClosed(1, n).toArray();
+		ForkJoinTask<Long> task = new ForkJoinSumCalculator(numbers);
+		return new ForkJoinPool().invoke(task);
 	}
 
 }
