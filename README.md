@@ -495,3 +495,92 @@ public interface Spliterator<T> {
 - characteristics : Spliterator 자체의 특성 집합을 포함하는 int를 반환한다.
 */
 ```
+
+##### Spliterator 추상 메서드
+- tryAdvance : 문자열에서 현재 인덱스에 해당하는 문자를 Consumer에 제공한다음에 인덱스를 증가시킨다.
+
+- trySplit : 반복될 자료구조를 분할하는 로직을 포함하므로 Spliterator에서 가장 중요한 메서드이다. 우선 분할 동작을 중단할 한계를 설정해야 한다. 주의할 점은 너무 많은 태스크(분할)을 만들지 않도록 신경써야한다. 반대로 분할이 필요한 상황에는 파싱해야 할 문자열 청크의 중간 위치를 기준으로 분할하도록 지시한다. 이 때 단어의 중간이 length의 가운데일 경우 빈 문자가 나올 때까지 분할 위치를 이동시킨다. 분할할 위치를 찾았으면 새로운 Spliterator를 만들고 현재위치부터 분할된 위치까지의 문자를 탐색한다.
+
+- estimatedSize : 탐색해야 할 요소의 개수는 Spliterator가 파싱할 문자열 전체 길이와 현재 반복중인 위치의 차(마이너스)다.
+
+- characteristics : 프레임워크에 Spliterator가 
+	- ORDERED : 문자열의 문자 등장 순서가 유의미함.
+	- SIZED : estimatedSize 메서드의 반환값이 정확함.
+	- SUBSIZED : trySplit으로 생성된 Spliterator도 정확한 크기를 가짐.
+	- NONNULL : 문자열에는 null 문자가 존재하지 않음.
+	- IMMUTABLE : 문자열 자체가 불변 클래스이므로 문자열을 파싱하면서 속성이 추가되지 않음.
+ 등의 특성임을 알려준다.
+
+### 8장. 리팩토링, 테스팅, 디버깅
+
+##### 가독성과 유연성을 개선하는 리팩토링
+- 가독성이란 ? : 추상적인 표현이라 정확하게 정의하긴 어렵지만, 다른사람도 쉽게 이해할 수 있음을 의미한다. 코드 가독성을 높이려면 코드의 문서화를 잘하고, 표준 코딩 규칙을 준수하는 등 노력을 기울여야 한다.
+
+##### 익명클래스를 람다 표현식으로 리팩토링하기
+익명클래스를 람다표현식으로 리팩토링 하는 이유 : 익명클래스는 코드를 장황하게 만들고 쉽게 에러를 일으킨다. 람다 표현식을 이용해서 간결하고, 가독성이 좋은 코드로 구현할 수 있다.
+
+```JAVA
+// 익명 클래스를 이용한 코드
+Runnable r1 = new Runnable() {
+	public void run() {
+		System.out.println("Hello");
+	}
+}
+
+// 람다 표현식을 사용한 코드
+Runnable r2 = () -> System.out.println("Hello");
+```
+
+하지만 모든 익명 클래스를 람다 표현식으로 변환할 수 있는 것은 아니다.
+1. 익명 클래스에서 사용한 this와 super는 람다표현식에서 다른 의미를 갖는다.
+- 익명클래스에서 this는 익명 클래스 자신을 가리키지만 람다에서 this는 람다를 감싸는 클래스를 가리킨다.
+
+2. 익명클래스는 감싸고 있는 클래스의 변수를 가릴 수 있다. (섀도우 변수). 하지만 다음 코드에서 보여주는 것처럼 람다 표현식으로는 변수를 가릴 수 없다. (아래 코드는 컴파일되지 않는다.)
+
+```JAVA
+int a = 10;
+// 컴파일 에러
+Runnable r1 = () -> {
+	int a = 2;
+	System.out.println(a);
+}
+
+// 정상 작동한다.
+Runnable r2 = new Runnable() {
+	public void run() {
+		int a = 2;
+		System.out.println(a);
+	}
+}
+```
+마지막으로 익명 클래스를 람다 표현식으로 바꾸면 콘텍스트 오버로딩에 따른 모호함이 초래될 수 있다. 익명 클래스는 인스턴스화할 때 명시적으로 형식이 정해지는 반면 람다의 형식은 콘텍스트에 따라 달라지기 때문이다.
+
+##### 람다표현식을 메서드 레퍼런스로 리팩토링하기
+람다 표현식은 쉽게 전달할 수 있는 짧은 코드다. 하지만 람다표현식 대신 메서드 레퍼런스를 이용하면 가독성을 높일 수 있다.
+
+```JAVA
+// 람다 표현식으로 칼로리 리스트 그룹화
+Map<CaloricLevel, List<Dish>> dishesByCaloricLevel = menu.stream()
+						.collect(
+							groupingBy(dish -> {
+								if (dish.getCalories() <= 400) return CaloricLevel.DIET;
+								else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+								else return CaloricLevel.FAT;
+						}));
+
+// 메서드 레퍼런스 사용
+Map<CaloricLevel, List<Dish>> dishesByCaloricLevel = 
+					menu.stream().collect(groupingBy(Dish::getCaloricLevel));
+
+class Dish {
+	public CaloricLevel getCaloricLevel() {
+		if (this.getCalories() <= 400) return CaloricLevel.DIET;
+		else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+		else return CaloricLevel.FAT;
+	}
+}
+```
+
+##### 명령형 데이터 처리를 스트림으로 리팩토링하기
+이론적으로는 반복자를 이용한 기존의 모든 컬렉션 처리 코드를 스트림 API로 바꿔야 한다. 이유는 스트림 API는 데이터 처리 파이프라인의 의도를 더 명확하게 보여준다.
+
