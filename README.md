@@ -582,5 +582,94 @@ class Dish {
 ```
 
 ##### 명령형 데이터 처리를 스트림으로 리팩토링하기
-이론적으로는 반복자를 이용한 기존의 모든 컬렉션 처리 코드를 스트림 API로 바꿔야 한다. 이유는 스트림 API는 데이터 처리 파이프라인의 의도를 더 명확하게 보여준다.
+이론적으로는 반복자를 이용한 기존의 모든 컬렉션 처리 코드를 스트림 API로 바꿔야 한다. 이유는 스트림 API는 데이터 처리 파이프라인의 의도를 더 명확하게 보여준다. 명령형 코드는 두 가지 패턴(필터링과 추출)으로 엉킨 코드이다. 이 코드의 전체 구현을 자세히 살펴본 이후에야 전체 코드의 의도를 이해할 수 있다. 또한 병렬처리하기 매우 어렵다.
 
+```JAVA
+// 명령형 코드
+List<String> dishNames = new ArrayList<>();
+for (Dish dish : menu) {
+	if (dish.getCalories() > 300) {
+		dishNames.add(dish.getName());
+	}
+}
+
+// 스트림
+menu.parallelStream()
+	.filter(d -> d.getCalories() > 300)
+	.map(Dish::getName)
+	.collect(toList());
+```
+
+##### 함수형 인터페이스 적용
+먼저 람다 표현식을 이용하려면 함수형 인터페이스가 필요하다. 따라서 함수형 인터페이스를 코드에 추가해야 한다.
+
+##### 조건부 연기 실행
+실제 작업을 처리하는 코드 내부에서 제어 흐름문이 복잡하게 얽힌 코드를 흔히 볼 수 있다. 흔히 보안검사나 로깅 관련 코드가 이처럼 사용된다.
+
+```JAVA
+// 아래 코드의 문제점
+// logger의 상태가 isLoggable이라는 메서드에 의해 클라이언트 코드로 노출됨.
+// 메시지를 로깅할 때마다 logger 객체의 상태를 매번 확인해야 함.
+if (logger.isLoggable(Log.FINER)) {
+	logger.finer("Problem: " + generateDiagnostic());
+}
+
+// 수정
+public static void log(Level level, Supplier<String> msgSupplier) {
+		if (logger.isLoggable(level)) {
+			log(level, msgSupplier.get()); //람다 실행
+		}
+	}
+
+logger.log(Level.FINER, "Problem: "+ generateDiagnostic());
+```
+
+##### 실행 어라운드
+실행 어라운드 패턴이란 매번 같은 준비, 종료 과정을 반복적으로 수행하는 것을 말한다. 이러한 코드가 있다면 이를 람다로 변환할 수 있다. 종료 과정을 처리하는 로직을 재사용함으로써 코드 중복을 줄일 수 있다.
+
+```JAVA
+String oneLine = processFile((BufferedReader b) -> b.readLine()); // 람다 전달
+String twoLine = processFile((BufferedReader b) -> b.readLine() + b.readLine()); // 다른 람다 전달
+
+public static String processFile(BufferedReaderProcesser p) throws IOException {
+		try (BufferedReader br = new BufferedReader(new FileReader("java8inaction/chap8/data.txt"))) {
+			return p.process(br); // 인수로 전달된 BufferedReaderProcessor 를 실행
+		}
+	}
+	
+	public interface bufferedReaderProcessor { // IOException을 던질 수 있는 람다의 함수형 인터페이스
+		String process(BufferedReader b) throws IOException;
+	}
+```
+
+##### 람다를 이용한 디자인 패턴
+- 전략
+전략 패턴은 한 유형의 알고리즘을 보유한 상태에서 런타임에 적절한 알고리즘을 선택하는 기법이다. 다양한 프레디케이트로 목록을 필터링 (예를 들어 무거운사과, 초록사과 )하는 방법이 전략 패턴의 예시이다. 다양한 기준을 갖는 입력값을 검증하거나, 다양한 파싱 방법을 사용하거나, 입력 형식을 설정하는 등 다양한 시나리오에 전략 패턴을 활용할 수 있다.
+	- 람다 표현식 사용
+	validationStrategy는 함수형 인터페이스이며 Predicate<String> 과 같은 함수 디스크립터를 가지고 있다. 따라서 다양한 전략을 구현하는 새로운 클래스를 구현할 필요 없이 람다 표현식을 직접 전달하면 코드가 간결해진다.
+
+- 템플릿 메서드
+알고리즘의 개요를 제시한 다음에 알고리즘의 일부를 고칠 수 있는 유연함을 제공해야 할 때 템플릿 메서드 디자인 패턴을 사용한다. 쉽게 말해 '이 알고리즘을 사용하고 싶은데 그대로는 안되고 조금 고쳐야 하는' 상황에 적합하다.
+
+```JAVA
+public class TemplateMethodPattern {
+	public static void main(String[] args) {
+		new OnlineBankingLambda().processCustomer(1337, (Customer c) -> System.out.println("Hello "+c.getName()));
+	}
+}
+
+abstract class OnlineBanking {
+	public void processCustomer ( int id) {
+		Customer c = Database.getCustomerWithId(id);
+		makeCustomerHappy(c);
+	}
+	
+	abstract void makeCustomerHappy (Customer c);
+	
+	// 람다 표현식 사용 하기 위한 메서드 생성
+	public void processCustomer(int id, Consumer<Customer> makeCustomerHappy) {
+		Customer c = Database.getCustomerWithId(id);
+		makeCustomerHappy.accept(c);
+	}
+}
+```
