@@ -673,3 +673,127 @@ abstract class OnlineBanking {
 	}
 }
 ```
+
+- 옵저버
+어떤 이벤트가 발생했을 때 한 객체 (주체) 가 다른 객체 (리스트)에 자동으로 알림을 보내야 하는 상황에서 옵저버 디자인 패턴을 사용한다. GUI Application에서 옵저버 패턴이 자주 등장한다.
+ * ObserverPattern.java 로직 참조
+
+```JAVA
+// 람다로 옵저버 만들기
+public class ObserverPattern {
+	public static void main (String [] args) {
+		Feed f = new Feed();
+		
+		// 람다로 표현하기
+		f.registerObserver((String tweet) -> {
+			if (tweet != null && tweet.contains("money")) {
+				System.out.println("Breaking news in NY! " + tweet);
+			}
+		});
+		
+		f.registerObserver((String tweet) -> {
+			if (tweet != null && tweet.contains("queen")) {
+				System.out.println("Yet another news in London... " + tweet);
+			}
+		});
+		
+		f.notifyObserver("The queen said her favourite book is Java 8 in action");
+	}
+}
+
+interface Observer {
+	void notify(String tweet);
+}
+
+interface Subject {
+	void registerObserver (Observer o);
+	void notifyObserver (String tweet);
+}
+
+class Feed implements Subject {
+	private final List<Observer> observer = new ArrayList<>();
+	
+	@Override
+	public void registerObserver(Observer o) {
+		this.observer.add(o);
+	}
+
+	@Override
+	public void notifyObserver(String tweet) {
+		observer.forEach(o -> o.notify(tweet));
+	}
+}
+
+// 자바로 옵저버 만들기
+public class ObserverPattern {
+	public static void main (String [] args) {
+		Feed f = new Feed();
+		f.registerObserver(new NYTimes());
+		f.registerObserver(new Guardian());
+		f.registerObserver(new LeMonde());
+		
+		f.notifyObserver("The queen said her favourite book is Java 8 in action");
+	}
+}
+
+interface Observer {
+	void notify(String tweet);
+}
+
+interface Subject {
+	void registerObserver (Observer o);
+	void notifyObserver (String tweet);
+}
+
+class NYTimes implements Observer {
+
+	@Override
+	public void notify(String tweet) {
+		if (tweet != null && tweet.contains("money")) {
+			System.out.println("Breaking news in NY! " + tweet);
+		}
+	}
+}
+
+class Guardian implements Observer {
+
+	@Override
+	public void notify(String tweet) {
+		if (tweet != null && tweet.contains("queen")) {
+			System.out.println("Yet another news in London... " + tweet);
+		}
+	}
+}
+
+class LeMonde implements Observer {
+
+	@Override
+	public void notify(String tweet) {
+		if (tweet != null && tweet.contains("wine")) {
+			System.out.println("Today cheese, wine and news!" + tweet);
+		}
+	}
+}
+
+class Feed implements Subject {
+	private final List<Observer> observer = new ArrayList<>();
+	
+	@Override
+	public void registerObserver(Observer o) {
+		this.observer.add(o);
+	}
+
+	@Override
+	public void notifyObserver(String tweet) {
+		observer.forEach(o -> o.notify(tweet));
+	}
+}
+```
+간단한 코드는 람다 표현식으로 클래스를 따로 구현하지 않고 정의할 수 있지만 여러 메서드를 정의하는 등 복잡하다면 기존의 클래스로 구현하는 방식이 바람직할 수도 있다.
+
+- 의무체인
+작업처리 객체의 체인(동작 체인 등) 을 만들 때는 의무 체인 패턴을 사용한다. 한 객체가 어떤 작업을 처리한 다음에 다른 객체로 결과를 전달하고, 다른 객체도 해야 할 작업을 처리한 다음에 또 다른 객체로 전달하는 식이다. 일반적으로 다음으로 처리할 객체 정보를 유지하는 필드를 포함하는 작업 처리 추상 클래스로 의무 체인 패턴을 구성한다.
+* 의무체인 패턴은 함수 체인가 비슷하다. 
+
+- 팩토리
+인스턴스화 로직을 클라이언트에 노출하지 않고 객체를 만들 때 팩토리 디자인 패턴을 사용한다.
