@@ -797,3 +797,48 @@ class Feed implements Subject {
 
 - 팩토리
 인스턴스화 로직을 클라이언트에 노출하지 않고 객체를 만들 때 팩토리 디자인 패턴을 사용한다.
+
+##### 디버깅
+문제가 발생한 코드를 디버깅할 때 개발자는 다음 두 가지를 가장 먼저 확인해야 한다.
+- 스택 트레이스
+- 로깅
+하지만 람다 표현식과 스트림은 기존의 디버깅 기법을 무력화한다.
+
+##### 람다와 스택 트레이스
+유감스럽게도 람다 표현식은 이름이 없기 때문에 조금 복잡한 스택 트레이스가 생성된다. 다음은 고의적으로 문제를 일으키도록 구현한 코드이다.
+
+```JAVA
+public class LambdaDebugging {
+	public static void main(String[] args) {
+		List<Point> points = Arrays.asList(new Point(12, 2), null);
+		//points.stream().map(p -> p.getX()).forEach(System.out::println);
+		
+		// 메서드 레퍼런스를 사용하였지만 스택트레이스의 이름이 표시되지 않음.
+		//points.stream().map(Point::getX).forEach(System.out::println);
+		
+		// 메서드 레퍼런스를 사용하여 스택트레이스의 이름이 표기됨.
+		List<Integer> numbers = Arrays.asList(1, 2, 3);
+		numbers.stream().map(LambdaDebugging::divideByZero).forEach(System.out::println);
+	}
+	
+	public static int divideByZero(int n) {
+		return n / 0;
+	}
+}
+
+// 예외
+at java_8_in_action.refactoring_testing_debug.LambdaDebugging.lambda$0(LambdaDebugging.java:9)
+	at java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:193)
+	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
+	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151)
+	at java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174)
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:418)
+	at java_8_in_action.refactoring_testing_debug.LambdaDebugging.main(LambdaDebugging.java:9)
+```
+첫줄부터 이름이 이상하다. 람다는 이름이 없기 때문에 컴파일러가 람다를 참조하는 이름을 만들어 냈다. 미래의 자바컴파일러가 개선해야 할 부분이다. (메서드레퍼런스가 어떤 상황에선 메서드명이 표기되고 어떤 상황에선 컴파일러가 임의로 이름을 짓는다.)
+
+##### 정보로깅
+스트림은 forEach로 호출하는 순간 전체 스트림이 소비된다. 스트림 중간중간 로그를 확인하는 방법에는 peek이라는 스트림 연산을 활용할 수 있다. peek은 스트림의 각 요소를 소비한 것처럼 동작을 실행한다. 하지만 forEach처럼 실제로 소비하지않는다.
