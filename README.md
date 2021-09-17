@@ -865,3 +865,60 @@ default void sort (Comparator<? super E> c) {
 - 동작 호환성
 	- 코드를 바꾼 다음에도 같은 입력값이 주어지면 프로그램이 같은 동작을 실행한다는 의미다.
 	- 예를 들어 인터페이스에 메서드를 추가하더라도 프로그램에서 추가된 메서드의 호출이 없을 때 동작 호환성은 유지된다.
+
+##### 디폴트 메서드 활용 패턴
+- 선택형 메서드
+default 메서드를 사용하면 기본 구현이 제공되므로 메서드를 재정의할 필요가 없어 불필요한 코드를 줄일 수 있다. 예시로 Iterator interface를 보면 remove() 메서드가 있다.
+
+- 동작 다중 상속
+디폴트 메서드를 이용하면 기존에는 불가능했던 동작 다중 상속 기능도 구현할 수 있다.
+
+	- 다중 상속 형식 : 여기서 ArrayList는 한 개의 클래스를 상속받고, 여섯 개의 인터페이스를 구현한다. 결과적으로 ArrayList는 AbstractList, List, RandomAccess, Cloneable, Serializable, Iterable, Collection의 서브형식이 된다. 따라서 디폴트 메서드를 사용하지 않아도 다중 상속을 활용할 수 있다.
+
+```JAVA
+class ArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess, Cloneable,
+Serializable, Iterator<E>, Collection<E> {
+
+	@Override
+	public boolean hasNext() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public E next() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public E get(int index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int size() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+}
+```
+
+##### 옳지 못한 상속
+예를 들어 한개의 메서드를 재사용하기 위해 100개의 메서드를 재사용해야 하는 인터페이스를 사용하는 것은 좋은 생각이 아니다. 이럴 때는 델리게이션(delegation), 즉 멤버 변수를 이용해서 클래스에서 필요한 메서드를 직접 호출하는 메서드를 작성하는 것이 좋다. 종종 final로 선언된 클래스를 볼 수 있다. 다른 클래스가 이 클래스를 상속받지 못하게 함으로써 원래 동작이 바뀌지 않길 원하기 때문이다.
+
+##### 알아야 할 세 가지 해결 규칙
+1. 클래스가 항상 이긴다. 클래스나 슈퍼클래스에서 정의한 메서드가 디폴트 메서드보다 우선권을 갖는다.
+2. 1번 규칙 이외의 상황에서는 서브인터페이스가 이긴다. 상속관계를 갖는 인터페이스에서 같은 시그니처를 갖는 메서드를 정의할 때는 서브 인터페이스가 이긴다. 즉 B가 A를 상속받는다면 B가 A를 이긴다.
+3. 여전히 디폴트 메서드의 우선순위가 결정되지 않았다면 여러 인터페이스를 상속받는 클래스가 명시적으로 디폴트 메서드를 오버라이드하고 호출해야 한다.
+
+##### 디폴트 메서드를 제공하는 서브인터페이스가 이긴다.
+Test2.java에서 보면 
+D = A의 hello상속 D에서 정의한 메서드가 없으므로 A의 hello적용
+B = A 상속관계지만 B의 메서드를 정의하였기 때문에 B의 hello가 우선순위
+D 가 메서드를 재정의하면 D가 호출됨. (1번 규칙에 의한 클래스 우선)
+
+##### 충돌 문제
+만약 인터페이스 A와 B가 동일한 메서드를 가지고 있을 때 C클래스에서 상속 받은 뒤 호출을 하게되면 규칙에 의한 정의가 되지 않기 때문에 사용자가 메서드를 오버라이딩해야 한다.
