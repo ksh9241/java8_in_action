@@ -922,3 +922,33 @@ D 가 메서드를 재정의하면 D가 호출됨. (1번 규칙에 의한 클래
 
 ##### 충돌 문제
 만약 인터페이스 A와 B가 동일한 메서드를 가지고 있을 때 C클래스에서 상속 받은 뒤 호출을 하게되면 규칙에 의한 정의가 되지 않기 때문에 사용자가 메서드를 오버라이딩해야 한다.
+
+### null 대신 Optional
+
+##### 보수적인 자세로 NullPointException 줄이기
+if로 null조건 체크 후 메서드 호출하기 : 조건이 여러개일수록 depth 가 늘어나는 반복 패턴 코드를 '깊은 의심 (deep doubt)' 이라고 부른다. 이를 반복하다 보면 코드의 구조가 엉망이 되고 가독성이 떨어진다.
+
+조건당 if하나씩 쓰기 : depth는 줄었지만 값 하나당 if를 하나씩 사용해야 하는 좋지 않은 코드임은 분명하다. 유지보수가 어려워지기 때문이다. 또한 중복코드가 너무많고 오타 등의 실수가 생길 수 있다.
+
+##### null 때문에 발생하는 문제
+- 에러의 근원이다
+- 코드를 어지럽힌다. : 때로는 중첩된 null 확인 코드를 추가해야 하므로 코드 가독성이 떨어진다.
+- 아무 의미가 없다.
+- 자바 철학에 위배된다. : 자바는 개발자로부터 모든 포인터를 숨겼지만 null은 예외다.
+- 형식 시스템에 구멍을 만든다. : null은 어디든 할당할 수 있다. 시스템의 다른 부분으로 null이 퍼졌을 때 어떤 의미로 사용되는지 알 수 없다.
+
+##### Optional 클래스
+Optional 은 선택형값을 캡슐화하는 클래스다. 값이 있다면 Optional<T>로 감싼다. 값이 없을 경우 Optional.empty 메서드로 Optional을 반환한다. Optional.empty는 Optional의 특별한 싱클턴 인스턴스를 반환하는 정적 팩토리 메서드이다. null과 비교했을 때 의미상으론 비슷하지만 null은 Exception을 발생하지만, Optional.empty()는 객체이므로 다양한 방식으로 활용할 수 있다.
+
+#### Optional 적용 패턴
+##### Optional 객체 만들기
+- 빈 Optional
+	- Optional<Car> optCar = Optional.empty();
+
+- 값이 있는 Optional
+	- Optional<Car> optCar = Optional.of(car);
+	- Car가 null이라면 즉시 NullPointException이 발생한다. (Optional을 사용하지 않았다면 car 프로퍼티에 접근하려 할 떄 에러가 발생한다.)
+
+- null값으로 Optional
+	- Optional<Car> optCar = Optional.ofNullable(car);
+	- car가 null이면 빈 Optional객체가 반환된다.
