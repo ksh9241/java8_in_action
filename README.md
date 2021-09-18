@@ -952,3 +952,57 @@ Optional 은 선택형값을 캡슐화하는 클래스다. 값이 있다면 Opti
 - null값으로 Optional
 	- Optional<Car> optCar = Optional.ofNullable(car);
 	- car가 null이면 빈 Optional객체가 반환된다.
+
+##### 디폴트 액션과 Optional 언랩
+Optional 클래스는 Optional 인스턴스에서 값을 읽을 수 있는 다양한 인스턴스 메서드를 제공한다.
+- get() : 값을 읽는 가장 간단한 메서드면서 동시에 가장 안전하지 않은 메서드이다. 값이 있을 경우 값을 반환하지만 없을 경우 NoSuchElementException을 발생시킨다. Optional에 값이 있다는 것을 확신하지 않는 경우 사용하지 않는 것이 바람직하다.
+
+- orElse : Optional에 값이 없을 경우 default값을 제공할 수 있다.
+
+- orElseGet(Supplier<? extends T> other) : orElse 메서드에 대응하는 게으른 버전의 메서드다. Optional의 값이 없을때만 Supplier가 실행된다. 디폴트 메서드를 만드는 데 시간이 걸리거나(효율성문제) Optional이 비어있을 때만 디폴트 값을 생성하고 싶을 때 사용한다.
+
+- orElseThrow(Supplier<? extends X> exceptionSupplier) : Optional이 비어있을 떄 예외를 발생시킨다는 점에서 get() 메서드와 비슷하다. 하지만 이 메서드는 발생시킬 예외의 종류를 선택할 수 있다.
+
+- ifPersent(Consumer<? super T> consumer) : 값이 존재할 때 인수로 넘겨준 동작을 실행할 수 있다. 값이 없으면 아무일도 일어나지 않는다.
+
+##### 두 Optional합치기
+
+```JAVA
+static public Optional<Insurance> nullSafeFindCheapestInsurance(Optional<Person> person, Optional<Car> car) {
+//		if (person.isPresent() && car.isPresent()) {
+//			return Optional.of(findCheapestInsurance(person.get(), car.get())); 
+//		} else {
+//			return Optional.empty();
+//		}
+		
+		// 람다로 변환
+		return person.flatMap(p -> car.map(c -> findCheapestInsurance(p, c)));
+		
+		/* 첫 번째 Optional에 flatMap을 호출했으므로 비어있다면 인수를 전달할 람다를 실행하지 않고 빈 Optional을 반환한다.
+		 * 반면 person에 값이 존재한다면 flatMap메서드에 필요한 Optional<Insurance>를 반환하는 Function의 입력으로 person을 사용한다.
+		 * 두 번째 Optional에 map을 호출하는데 car의 값이 비었으면 Function은 빈 Optional을 반환하므로 nullSafeFindCheapestInsurance 메서드는 빈 Optional을 반환한다.
+		 * 마지막으로 person과 car 모두 값이 있으면 findCheapestInsurance 메서드를 안전하게 호출할 수 있다.*/
+	}
+```
+
+##### 잠재적으로 null이 될 수 있는 대상을 Optional로 감싸기
+
+```JAVA
+public class Example2 {
+	public static void main(String[] args) {
+		Map<String, Object> map = new HashMap<>();
+
+		// 수정 전 : null 반환
+		Object value = map.get("key");
+		System.out.println(value);
+		
+		// 수정 후 : 예외 발생
+		Optional<Object> value2 = Optional.ofNullable(map.get("key"));
+		Object obj = value2.get();
+		System.out.println(obj);
+	}
+}
+```
+
+##### 기본형 Optional과 이를 사용하지 말아야 하는 이유
+스트림처럼 Optional도 기본형으로 특화된 OptionalInt, OptionalLong, OptionalDouble 등의 클래스를 제공한다. 스트림의 경우 많은 요소를 가질 때는 기본형 특화 스트림을 이용해 성능을 향상 시킬 수 있지만 Optional은 최대 요소 수는 한 개이므로 기본형 특화 클래스로 성능을 개선할 수 없다. 기본형 특화 Optional은 map, flatMap, filter 등을 지원하지 않으므로 기본형 특화 Optional을 사용할 것을 권장하지 않는다. 또한 다른 일반 Optional과 혼용할 수 없다.
