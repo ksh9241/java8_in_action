@@ -1,8 +1,13 @@
 package java_8_in_action.future;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
 
 public class AsynchronizedException {
 	public static void main(String[] args) {
@@ -24,6 +29,11 @@ public class AsynchronizedException {
 		
 		long retrivalTime = ((System.nanoTime() - start) / 1_000_000);
 		System.out.println("Price returned after " + retrivalTime + " msecs");
+		
+		System.out.println("--------------------------------------");
+		
+		
+		
 	}
 
 	private static void doSomethingElse() {
@@ -38,6 +48,10 @@ class Shop {
 		this.name = name;
 	}
 	
+	public String getName() {
+		return this.name;
+	}
+	
 	public double getPrice(String product) {
 		return calculatePrice(product);
 	}
@@ -46,11 +60,22 @@ class Shop {
 	public Future<Double> getPriceAsync (String product) {
 		CompletableFuture<Double> futurePrice = new CompletableFuture<>();
 		new Thread( () -> {
-			double price = calculatePrice(product);
-			futurePrice.complete(price);
+			try {
+				double price = calculatePrice(product);
+				// 계산이 정상적으로 종료되면 Future에 가격 정보를 저장한 채로 Future를 종료한다.
+				futurePrice.complete(price); 
+			} catch (Exception e) {
+				// 도중에 문제가 발생하면 발생한 에러를 포함시켜 Future를 종료한다.
+				futurePrice.completeExceptionally(e);
+			}
 		}).start();
 		
 		return futurePrice;
+	}
+	
+	// getPrice 람다로 변환
+	public Future<Double> getPriceAsync_Lambda (String product) {
+		return CompletableFuture.supplyAsync(() -> calculatePrice(product));
 	}
 	
 	public double calculatePrice (String product) {

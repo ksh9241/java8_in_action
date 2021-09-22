@@ -1035,3 +1035,53 @@ Future <-> CompletableFuture == Collection <-> Stream
 동기 API : 메서드를 호출한 다음 메서드의 수행이 완료될 때까지 기다렸다가 반환되는 값으로 동작을 수행한다. 이처럼 동기 API를 사용하는 상황을 블록호출 (blocking call) 이라고 한다.
 
 비동기 API : 메서드가 즉시 반환되며 끝내지 못한 나머지 작업을 호출자 스레드와 동기적으로 실행될 수 있도록 다른 스레드에 할당한다. 이와 같은 비동기 API를 사용하는 상황을 비블록호출 (non-blocking call) 이라고 한다.
+
+##### 팩토리 메서드 supplyAsync로 CompletableFuture 만들기
+
+```JAVA
+// getPrice 동기 메서드를 비동기 메서드로 변환
+	public Future<Double> getPriceAsync (String product) {
+		CompletableFuture<Double> futurePrice = new CompletableFuture<>();
+		new Thread( () -> {
+			try {
+				double price = calculatePrice(product);
+				// 계산이 정상적으로 종료되면 Future에 가격 정보를 저장한 채로 Future를 종료한다.
+				futurePrice.complete(price); 
+			} catch (Exception e) {
+				// 도중에 문제가 발생하면 발생한 에러를 포함시켜 Future를 종료한다.
+				futurePrice.completeExceptionally(e);
+			}
+		}).start();
+		
+		return futurePrice;
+	}
+	
+	// getPrice 람다로 변환
+	public Future<Double> getPriceAsync_Lambda (String product) {
+		return CompletableFuture.supplyAsync(() -> calculatePrice(product));
+	}
+```
+
+SupplyAsync : Supplier를 인수로 받아서 CompletableFuture를 반환한다.
+CompletableFuture는 Supplier를 실행해서 비동기적으로 결과를 생성한다. ForkJoinPool의 Executor중
+하나가 Supplier를 실행할 것이다.하지만 두번째 인수를 받는 오버로드 버전의 supplyAsync 메서드를 이용해서 다른 Executor를 지정할 수 있다. 결국 모든 다른 CompletableFuture의 팩토리 메서드에 Executor를 선택적으로 전달할 수 있다.
+
+##### 스레드 풀 크기 조절
+Nthreads = Ncpu * Ucpu * (1 + W/C)
+- Ncpu : Runtime.getRuntime().availableProcessors() 가 반환하는 코어 수
+- Ucpu : 0과 1 사이의 값을 갖는 CPU 활용 비율
+- W/C : 대기시관과 계산시간의 비율
+
+##### 커스텀 Executor 만들기
+
+```JAVA
+private final Executor executor = 
+			Executors.newFixedThreadPool(Math.min(shops.size(), 100), new ThreadFactory() { // 상점 수 만큼의 스레드를 갖는 풀을 생성한다 (스레드 수의 범위는 0 과 100 사이).
+				public Thread newThread(Runnable r) {
+					Thread t = new Thread(r);
+					t.setDaemon(true); // 프로그램 종료를 방해하지 않는 데몬 스레드를 사용한다.
+					return t;
+				}
+	});
+```
+우리가 만드는 풀은 데몬 스레드 (daemon thread) 를 포함한다. 자바에선 일반스레드가 실행중이면 자바 프로그램은 종료되지 않는다. 따라서 어떤 이벤트를 한없이 기다리면서 종료되지 않는 일반 스레드가 문제가 될 수 있다. 반면 데몬 스레드는 자바 프로그램이 종료될 때 강제로 실행이 종료될 수 있다.
