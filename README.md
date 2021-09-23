@@ -1085,3 +1085,14 @@ private final Executor executor =
 	});
 ```
 우리가 만드는 풀은 데몬 스레드 (daemon thread) 를 포함한다. 자바에선 일반스레드가 실행중이면 자바 프로그램은 종료되지 않는다. 따라서 어떤 이벤트를 한없이 기다리면서 종료되지 않는 일반 스레드가 문제가 될 수 있다. 반면 데몬 스레드는 자바 프로그램이 종료될 때 강제로 실행이 종료될 수 있다.
+
+##### CompletableFuture 메서드
+- RunAsync : 파라미터가 없기 때문에 반환값이 없다.
+- SupplyAsync : 파라미터로 Supplier를 받는데 이는 단순히 하나의 값만 리턴하는 인터페이스이다. 때문에 결과를 리턴할 수 있다.
+- completedFutrue : 입력받은 값으로 이미 완료된 CompletableFuture를 생성하는 간단한 API이다.
+- thenAccept : 파라미터로 Consumer를 받는다. Complition stage에서 어떤 completion이 발생하면 thenAccept 는 CompletableFuture에서 받은 결과를 Consumer에게 넘겨준다.
+- thenApply : Callback 처리를 중첩시키고 싶을 때 사용한다.
+- thenCompose : 콜백함수 thenAccept에서 CompletableFuture를 사용하게 된 경우 사용한다.
+- thenCombine : 서로 다른 Future가 동시에 수행이 되어 그 결과가 머지됩니다.
+- allOf : 2개 이상의 독립적인 Future들을 모두 동시에 수행한 후 머가지 되는 경우 사용됩니다. 리턴값이 void입니다. 따라서 콜백이 아니면 결과를 얻을 수 없습니다.
+- anyOf : CompletableFuture 각각이 종료되면 CompletableFuture.anyOf() 의 리턴이 되며 타입은 CompletableFuture<Object> 입니다. 중요한 건 모두 한번씩 수행을 합니다.
