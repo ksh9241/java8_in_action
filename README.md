@@ -1096,3 +1096,18 @@ private final Executor executor =
 - thenCombine : 서로 다른 Future가 동시에 수행이 되어 그 결과가 머지됩니다.
 - allOf : 2개 이상의 독립적인 Future들을 모두 동시에 수행한 후 머가지 되는 경우 사용됩니다. 리턴값이 void입니다. 따라서 콜백이 아니면 결과를 얻을 수 없습니다.
 - anyOf : CompletableFuture 각각이 종료되면 CompletableFuture.anyOf() 의 리턴이 되며 타입은 CompletableFuture<Object> 입니다. 중요한 건 모두 한번씩 수행을 합니다.
+
+### 새로운 날짜와 시간 API
+자바 1부터 사용한 Date는 초기값이 1970년도로 설정되어 있고, 데이터가 직관적이지 않다. 자바 1.1에 해결책은 내놓기 위해 Calender 클래스를 대안으로 제공하였지만 어떤 클래스를 사용할 지 혼란만 초래했다. 또한 DataFormat 같은 일부 기능은 Date 클래스에서만 작동한다. 마지막으로 Date와 Calender는 가변 클래스로서 데이터 값이 변할 수 있다. 때문에 유지보수가 어려워진다.  자바 8에 들어서 이러한 문제에 대한 해결책으로 java.time 패키지를 추가한다.
+
+##### LocalDate와 LocalTime
+LocalDate 인스턴스는 시간을 제외한 날짜를 표현하는 불변 객체이다. 특히 LocalDate는 어떤 시간대 정보도 포함하지 않는다. LocalDate 인스턴스는 년도, 월, 일 등을 반환한다.
+
+##### Instant : 기계의 날짜와 시간
+Instant 클래스는 유닉스 에포크 시간 (1970년 1월 1일 0시 0분 0초 UTC)을 기준으로 특정 지점까지의 시간을 초로 표현한다. 팩토리 메서드 ofEpochSecond에 초를 넘겨줘서 Instant 클래스 인스턴스를 만들 수 있다. Instant 클래스는 나노 초 (10억분의 1초) 의 정밀도를 제공한다.
+
+##### Duration과 Period 정의
+LocalDate 관련 클래스는 Temporal 인터페이스를 구현하는데 Temporal 인터페이스는 특정 시간을 모델링하는 객체의 값을 어떻게 읽고 조작할지 정의한다.
+- Duration : 파라미터 2개의 시간값의 차이 값을 반환한다. (시 분 초) [LocalDateTime, LocalTime, Instant 타입을 받을 수 있다.]
+
+- Period : 파라미터 2개의 날짜값의 차이를 반환한다. (년 월 일) [LocalDate]
