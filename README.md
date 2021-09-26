@@ -1111,3 +1111,12 @@ LocalDate 관련 클래스는 Temporal 인터페이스를 구현하는데 Tempor
 - Duration : 파라미터 2개의 시간값의 차이 값을 반환한다. (시 분 초) [LocalDateTime, LocalTime, Instant 타입을 받을 수 있다.]
 
 - Period : 파라미터 2개의 날짜값의 차이를 반환한다. (년 월 일) [LocalDate]
+
+##### TemporalAdjusters 사용하기
+다음주 일요일, 돌아오는 평일, 어떤 달의 마지막 날 등 좀 더 복잡한 날짜 조정 기능이 필요할 때 사용한다.
+
+##### 날짜와 시간 객체 출력과 파싱
+java.time.format 패키지가 추가되었다. 패키지 내 가장 중요한 클래스는 DateTimeFormatter이다. 정적 팩토리 메서드와 상수를 이용해서 손쉽게 포매터를 만들 수 있다.
+
+##### 다양한 시간대와 캘린더 활용
+기존의 java.util.timezone을 대체할 java.time.zoneId 클래스가 새롭게 등장했다. 날짜와 시간 API에서 제공하는 다른 클래스와 마찬가지로 불변 클래스이다.
