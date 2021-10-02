@@ -1147,3 +1147,100 @@ synchronized가 있다면 동시성 버그를 매우 고치기 어렵다. 자바
 
 ##### 꼬리 호출 최적화
 일반적으로 반복코드보다 재귀 코드가 더 비싸다. 이유는 재귀함수를 호출할 때마다 호출 스택에 각 호출 시 생성되는 정보를 저장할 새로운 스택 프레임이 만들어진다. 즉 입력값에 비례해서 메모리 사용량이 증가한다. 큰 값을 사용하면 StackOverflowError이 발생한다. 이를 해결하기 위해 꼬리 호출 최적화라는 해결책을 제공한다.
+
+### 함수형 프로그래밍 기법
+
+##### 고차원함수
+Comparator.comparing 처럼 다음 중 하나 이상의 동작을 수행하는 함수를 고차원 함수라 부른다.
+- 하나 이상의 함수를 인수로 받음
+- 함수를 결과로 반환
+
+##### 부작용과 고차원 함수
+스트림 연산으로 전달하는 함수는 부작용이 없어야 하며, 부작용을 포함하는 함수를 사용하면 부정확한 결과가 발생하거나 레이스컨디션 때문에 예상치 못한 결과가 발생할 수 있다. 고차원 함수를 적용할 때에도 같은 규칙이 적용된다. 어떤 인수가 전달 될 지 알 수 없으므로 부작용을 포함할 가능성을 염두해 두어야 한다.
+
+##### 커링
+커링은 x와 y라는 두 인수를 받는 함수 f를 한 개의 인수를 받는 g라는 함수로 대체하는 기법이다. 함수 g와 원래 함수 f가 최종적으로 반환하는 값은 같다. 즉, f(x, y) = (g(x))(y)가 성립한다.
+
+```JAVA
+public class Curring {
+	public static void main(String[] args) {
+		
+		double xx = converter(5 , 9.0/5, 32);
+		System.out.println(xx);
+		
+		DoubleUnaryOperator xxx = curriedConerter(9.0/5, 32);
+		System.out.println(xxx.applyAsDouble(5));
+	}
+	
+	// 코드의 문제점 이 코드는 섭씨를 화씨로 변환하는 기능만 사용하는 메서드이다. ( 온도를 제외한 킬로미터, 마일 등의 단위로 변환 불가 )
+	// x = 변환값, f = 변환 요소, b = 기준치 조정 요소 
+	static double converter (double x, double f, double b) {
+		return x * f + b;
+	}
+	
+	// f = 변환 요소, b = 기준치 만 넘겨주어 변환하는 공통함수로 사용할 수 있다.
+	static DoubleUnaryOperator curriedConerter (double f, double b) {
+		return (double x) -> x * f + b;
+	}
+}
+```
+
+##### 영속 자료구조
+함수형 프로그램에서 사용하는 자료구조이다. 함수형 프로그램에서는 함수형 자료구조, 불변 자료구조 등의 용어도 사용하지만 보통은 영속 자료구조라 부른다. 여기서 말하는 영속은 DB에 프로그램 종료 후에도 데이터가 남아있음을 의미하는 영속과는 다른 의미이다. 함수형 메서드에서는 전역 자료구조나 인수로 전달된 구조를 갱신할 수 없다. 자료 구조를 바꾼다면 같은 메서드를 두번호출 했을 때 결과가 달라지면서 참조 투명성에 위배되고 인수를 결과로 단순하게 매핑할 수 있는 능력이 상실되기 떄문이다.
+
+##### 자료구조를 갱신할 때 발생하는 문제
+
+```JAVA
+public class Persistent {
+	public static void main(String[] args) {
+		TrainJourney a = new TrainJourney(10000, null);
+		TrainJourney b = new TrainJourney(20000, null);
+		TrainJourney c = new TrainJourney(30000, null);
+		System.out.println(a);
+		a = link (a, b);
+		System.out.println(a);
+		a = link (a, c);
+		System.out.println(a);
+	}
+	
+	// 아래 코드는 a의 TrainJourney에서 마지막 여정을 찾아 a의 리스트 끝부분을 가리키는 null을 리스트 b로 대체한다.
+	// 여기서 문제가 발생한다. firstJourney 라는 변수는 x에서 y로의 경로를 포함하고, secondJourney라는 변수는 y에서 z로 경로를 포함한다.
+	// link (firstJourney, secondJourney) 를 호출하면 first가 second를 포함하면서 파괴적인 갱신 (first를 변경시킴)이 일어난다.
+	// 결과적으로 first 변수는 x에서 y로의 여정이 아니라 x에서 z로의 여정을 의미하게 된다.
+	static TrainJourney link (TrainJourney a, TrainJourney b) {
+		if (a == null) return b;
+		TrainJourney t = a;
+		
+		// t로 a의 주소를 복사하여 데이터를 변환하기 때문에 a의 값도 변환된다. 이럴 경우 참조 투명성에 위배된다.
+		while (t.onward != null) {
+			t = t.onward;
+		}
+		
+		t.onward = b;
+		return a;
+	}
+	
+	// 함수형에서는 계산 결과를 표현할 자료구조가 필요하면 기존의 자료구조를 갱신하지 않도록 새로운 자료구조를 만들어야 한다.
+	static TrainJourney append (TrainJourney a, TrainJourney b) {
+		return a == null ? b : new TrainJourney(a.price, append(a.onward, b));
+	}
+}
+
+
+class TrainJourney {
+	public int price;
+	public TrainJourney onward;
+	public TrainJourney (int p, TrainJourney t) {
+		price = p;
+		onward = t;
+	}
+	
+	@Override
+	public String toString() {
+		if (onward != null) {
+			return "price == " + price + " onward.price == " + onward.price;
+		}
+		return "price == " + price;
+	}
+}
+```
