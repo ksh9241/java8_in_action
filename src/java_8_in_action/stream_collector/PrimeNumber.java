@@ -8,6 +8,8 @@ public class PrimeNumber {
 		System.out.println(i);
 	}
 	
+	
+	
 	// 스트림 숫자 얻기
 	static IntStream numbers() {
 		return IntStream.iterate(2,  n -> n + 1);
